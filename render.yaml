@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: sintesi
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sintesi-db
+          property: connectionString
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: REDDIT_USER_AGENT
+        value: "sintesi/0.1 (personal portfolio project)"
+
+databases:
+  - name: sintesi-db
+    plan: free
