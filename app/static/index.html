@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sintesi — what Reddit is saying today</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+  <style>
+    .chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.5rem; }
+    .chips button { width: auto; margin: 0; padding: .35rem .8rem; font-size: .9rem; }
+    .meta { color: var(--pico-muted-color); font-size: .85rem; }
+    .hidden { display: none; }
+    article.post { margin-bottom: .75rem; }
+    .post-meta { color: var(--pico-muted-color); font-size: .8rem; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <hgroup>
+      <h1>Sintesi</h1>
+      <p>The public consensus from a subreddit's hottest posts today.</p>
+    </hgroup>
+
+    <input type="search" id="filter" placeholder="Filter topics…" autocomplete="off" />
+    <div class="chips" id="chips"></div>
+
+    <p id="status" class="meta hidden"></p>
+
+    <section id="digest" class="hidden">
+      <h2 id="d-title"></h2>
+      <p id="d-meta" class="meta"></p>
+      <p id="d-overview"></p>
+
+      <h3>Hot topics</h3>
+      <div id="d-topics"></div>
+
+      <h3>Top posts</h3>
+      <div id="d-posts"></div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let topics = [];
+
+    async function loadTopics() {
+      const res = await fetch("/api/topics");
+      topics = await res.json();
+      renderChips(topics);
+    }
+
+    function renderChips(list) {
+      const box = $("chips");
+      box.innerHTML = "";
+      for (const t of list) {
+        const b = document.createElement("button");
+        b.className = "outline";
+        b.textContent = t.display_name;
+        b.onclick = () => loadDigest(t.slug);
+        box.appendChild(b);
+      }
+    }
+
+    $("filter").addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase();
+      renderChips(topics.filter((t) => t.display_name.toLowerCase().includes(q)));
+    });
+
+    function setStatus(msg) {
+      const s = $("status");
+      if (!msg) { s.classList.add("hidden"); return; }
+      s.textContent = msg;
+      s.classList.remove("hidden");
+    }
+
+    function redditLink(permalink) {
+      return permalink.startsWith("http") ? permalink : "https://www.reddit.com" + permalink;
+    }
+
+    async function loadDigest(slug) {
+      $("digest").classList.add("hidden");
+      setStatus("Reading the room on r/" + slug + "… this can take a few seconds.");
+      try {
+        const res = await fetch("/api/digest/" + slug);
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          setStatus(body.detail || "Something went wrong.");
+          return;
+        }
+        render(await res.json());
+        setStatus("");
+      } catch {
+        setStatus("Could not reach the server.");
+      }
+    }
+
+    function render(d) {
+      $("d-title").textContent = d.subreddit ? "r/" + d.subreddit : d.topic;
+      const when = new Date(d.generated_at).toLocaleString();
+      $("d-meta").textContent =
+        `${d.date} · ${d.cached ? "cached" : "fresh"} · ${d.model_used} · generated ${when}`;
+      $("d-overview").textContent = d.overview;
+
+      $("d-topics").innerHTML = "";
+      for (const t of d.hot_topics) {
+        const el = document.createElement("article");
+        el.innerHTML = `<strong>${t.title}</strong><br>${t.summary}`;
+        $("d-topics").appendChild(el);
+      }
+
+      $("d-posts").innerHTML = "";
+      for (const p of d.top_posts) {
+        const el = document.createElement("article");
+        el.className = "post";
+        el.innerHTML =
+          `<a href="${redditLink(p.permalink)}" target="_blank" rel="noopener">${p.title}</a>` +
+          `<div class="post-meta">${p.score} points · ${p.num_comments} comments</div>`;
+        $("d-posts").appendChild(el);
+      }
+
+      $("digest").classList.remove("hidden");
+    }
+
+    loadTopics();
+  </script>
+</body>
+</html>
