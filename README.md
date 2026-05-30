@@ -35,6 +35,12 @@ uv run uvicorn app.main:app --reload
 
 Page at `/`, Swagger at `/docs`. Tests: `uv run pytest`.
 
+Or run it against Postgres with Docker:
+
+```bash
+docker compose up --build   # set GROQ_API_KEY in .env first
+```
+
 ## Design decisions
 
 - **Reddit's public JSON, not OAuth** — needs only a User-Agent, so setup is one string. Stricter
