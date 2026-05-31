@@ -132,13 +132,7 @@
       e.preventDefault();
       const raw = $("filter").value.trim();
       if (!raw) return;
-      const q = raw.toLowerCase();
-      const matches = topics.filter((t) => t.display_name.toLowerCase().includes(q));
-      if (matches.length) {
-        loadDigest(matches[0].slug);
-      } else {
-        setStatus(`No topic matches "${raw}" yet. Pick one below.`);
-      }
+      searchDigest(raw);
     });
 
     function setStatus(msg) {
@@ -148,11 +142,11 @@
       s.classList.remove("hidden");
     }
 
-    async function loadDigest(slug) {
+    async function fetchDigest(url, label) {
       $("digest").classList.add("hidden");
-      setStatus("Reading the room on " + slug + "... this can take a few seconds.");
+      setStatus("Reading the room on " + label + "... this can take a few seconds.");
       try {
-        const res = await fetch("/api/digest/" + slug);
+        const res = await fetch(url);
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           setStatus(body.detail || "Something went wrong.");
@@ -163,6 +157,14 @@
       } catch {
         setStatus("Could not reach the server.");
       }
+    }
+
+    function loadDigest(slug) {
+      fetchDigest("/api/digest/" + encodeURIComponent(slug), slug);
+    }
+
+    function searchDigest(q) {
+      fetchDigest("/api/search?q=" + encodeURIComponent(q), q);
     }
 
     function render(d) {

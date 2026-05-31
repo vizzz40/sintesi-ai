@@ -99,3 +99,34 @@ def test_source_failure_returns_502(client, monkeypatch):
     res = client.get("/api/digest/data-engineering")
 
     assert res.status_code == 502
+
+
+def test_search_returns_digest_for_any_query(client):
+    res = client.get("/api/search", params={"q": "rust async"})
+
+    assert res.status_code == 200
+    body = res.json()
+    assert body["query"] == "rust async"
+    assert body["overview"] == "People recommend dbt."
+    assert body["cached"] is False
+
+
+def test_search_is_cached_on_second_call(client):
+    client.get("/api/search", params={"q": "rust async"})
+    res = client.get("/api/search", params={"q": "rust async"})
+
+    assert res.json()["cached"] is True
+
+
+def test_search_blank_query_returns_400(client):
+    res = client.get("/api/search", params={"q": "   "})
+
+    assert res.status_code == 400
+
+
+def test_search_no_results_returns_404(client, monkeypatch):
+    monkeypatch.setattr(FakeSource, "top_posts", lambda self, query, limit=None: [])
+
+    res = client.get("/api/search", params={"q": "nothing here"})
+
+    assert res.status_code == 404
