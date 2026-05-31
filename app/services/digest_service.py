@@ -12,6 +12,10 @@ class TopicNotFound(Exception):
     pass
 
 
+class NoResults(Exception):
+    pass
+
+
 class DigestService:
     def __init__(
         self,
@@ -32,6 +36,11 @@ class DigestService:
         digest, cached = self._get_or_create(topic.query, refresh)
         return topic, digest, cached
 
+    def get_for_query(self, query: str, refresh: bool = False) -> tuple[Topic, Digest, bool]:
+        digest, cached = self._get_or_create(query, refresh)
+        topic = Topic(slug=query, display_name=query, query=query)
+        return topic, digest, cached
+
     def _get_or_create(self, query: str, refresh: bool) -> tuple[Digest, bool]:
         today = date.today()
         existing = self.session.exec(
@@ -48,6 +57,8 @@ class DigestService:
 
     def _generate(self, query: str, day: date) -> Digest:
         posts = self.source.top_posts(query)
+        if not posts:
+            raise NoResults(query)
         comments = {
             p.id: self.source.top_comments(query, p.id) for p in posts[:5]
         }

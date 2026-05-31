@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 from app.db import get_session
 from app.models import Digest, Topic
 from app.schemas import DigestOut, PostOut, TopicOut
-from app.services.digest_service import DigestService, TopicNotFound
+from app.services.digest_service import DigestService, NoResults, TopicNotFound
 from app.services.sources import SourceError
 from app.services.summarizer import SummarizerError
 
@@ -31,6 +31,33 @@ def get_digest(slug: str, session: SessionDep, refresh: bool = False):
         topic, digest, cached = service.get_for_topic(slug, refresh)
     except TopicNotFound:
         raise HTTPException(status_code=404, detail=f"Unknown topic: {slug}") from None
+    except NoResults:
+        raise HTTPException(
+            status_code=404, detail="No recent discussion to summarize"
+        ) from None
+    except SourceError:
+        raise HTTPException(
+            status_code=502, detail="Could not fetch posts from the source"
+        ) from None
+    except SummarizerError:
+        raise HTTPException(status_code=502, detail="Could not generate the summary") from None
+    return _to_out(topic, digest, cached, service.source.name)
+
+
+@router.get("/search", response_model=DigestOut)
+def search(q: str, session: SessionDep, refresh: bool = False):
+    query = q.strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="Type a topic to search for")
+    if len(query) > 100:
+        query = query[:100]
+    service = DigestService(session)
+    try:
+        topic, digest, cached = service.get_for_query(query, refresh)
+    except NoResults:
+        raise HTTPException(
+            status_code=404, detail=f'No recent Hacker News discussion about "{query}"'
+        ) from None
     except SourceError:
         raise HTTPException(
             status_code=502, detail="Could not fetch posts from the source"
