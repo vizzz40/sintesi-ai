@@ -39,6 +39,18 @@
       color: #000;
     }
     input[type="search"]:focus { outline: 0; }
+    .search button {
+      flex: none;
+      font-family: inherit;
+      font-size: 1rem;
+      padding: .5rem 1rem;
+      border: 0;
+      border-left: 1px solid #000;
+      background: #fff;
+      color: #000;
+      cursor: pointer;
+    }
+    .search button:hover { background: #000; color: #fff; }
     .chips { margin: 1rem 0 0; }
     .chips button {
       font-family: inherit;
@@ -65,13 +77,14 @@
   <p class="tagline">The public consensus from Hacker News, summarized.</p>
   <hr />
 
-  <div class="search">
+  <form class="search" id="searchform" role="search">
     <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" aria-hidden="true">
       <circle cx="11" cy="11" r="7" />
       <line x1="16.5" y1="16.5" x2="21" y2="21" />
     </svg>
     <input type="search" id="filter" placeholder="Get the real opinion on..." autocomplete="off" />
-  </div>
+    <button type="submit" id="go">Read the room</button>
+  </form>
   <div class="chips" id="chips"></div>
 
   <p id="status" class="meta hidden"></p>
@@ -113,6 +126,19 @@
     $("filter").addEventListener("input", (e) => {
       const q = e.target.value.toLowerCase();
       renderChips(topics.filter((t) => t.display_name.toLowerCase().includes(q)));
+    });
+
+    $("searchform").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const raw = $("filter").value.trim();
+      if (!raw) return;
+      const q = raw.toLowerCase();
+      const matches = topics.filter((t) => t.display_name.toLowerCase().includes(q));
+      if (matches.length) {
+        loadDigest(matches[0].slug);
+      } else {
+        setStatus(`No topic matches "${raw}" yet. Pick one below.`);
+      }
     });
 
     function setStatus(msg) {
