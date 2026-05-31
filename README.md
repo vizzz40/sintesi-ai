@@ -1,10 +1,12 @@
 # Sintesi
 
-Type a topic and get today's public consensus from the matching subreddit — a short summary of what
-people are actually discussing, the hot themes, and the top posts behind it.
+Type a topic and get today's public consensus from Hacker News — a short summary of what people are
+actually discussing, the hot themes, and the top posts behind it.
 
-It fetches a subreddit's top posts of the day from Reddit's public JSON, has an LLM write the
-consensus, and caches the result so the same topic costs nothing for the rest of the day.
+It fetches the top recent stories and comments for a topic from the Hacker News Algolia API, has an
+LLM write the consensus, and caches the result so the same topic costs nothing for the rest of the
+day. A Reddit source ships too, but Reddit 403s datacenter IPs, so it only works from a residential
+network — pick the source with `CONTENT_SOURCE` (`hackernews` or `reddit`).
 
 ## Architecture
 
@@ -13,12 +15,13 @@ flowchart LR
     UI["Web page"] --> API[FastAPI]
     API --> DS[DigestService]
     DS -->|lookup / store| DB[("DB")]
-    DS -->|cache miss| RC[RedditClient] --> Reddit[(Reddit JSON)]
+    DS -->|cache miss| SRC[ContentSource] --> HN[(Hacker News)]
     DS -->|cache miss| SUM[Summarizer] --> Groq[(Groq)]
 ```
 
-`routes → DigestService → (RedditClient, Summarizer, DB)`. The service orchestrates; the external
-clients are thin and swappable, so the suite runs offline with both mocked.
+`routes → DigestService → (ContentSource, Summarizer, DB)`. The service orchestrates; the source is
+chosen by config behind a small Protocol, so swapping Hacker News for Reddit is one env var and the
+suite runs offline with everything mocked.
 
 ## Stack
 
@@ -28,7 +31,7 @@ Python 3.13 · FastAPI · SQLModel (SQLite / Postgres) · httpx · Groq · pytes
 
 ```bash
 uv sync
-cp .env.example .env        # add your GROQ_API_KEY and a Reddit user agent
+cp .env.example .env        # add your GROQ_API_KEY
 uv run python -m app.seed   # create tables, load the topics
 uv run uvicorn app.main:app --reload
 ```
@@ -43,10 +46,11 @@ docker compose up --build   # set GROQ_API_KEY in .env first
 
 ## Design decisions
 
-- **Reddit's public JSON, not OAuth** — needs only a User-Agent, so setup is one string. Stricter
-  rate limits, which the daily cache makes a non-issue.
-- **Cache by `(subreddit, day)`** — the expensive Reddit fetch plus LLM call runs once per
-  subreddit per day; every read after is a cheap database lookup.
+- **Hacker News over Reddit** — Reddit blocks datacenter IPs with 403s regardless of User-Agent, so
+  it can't run on a host like Render. The HN Algolia API needs no auth and serves datacenter IPs, so
+  the live demo actually works. Reddit stays as a selectable source for local use.
+- **Cache by `(query, day)`** — the expensive source fetch plus LLM call runs once per topic per
+  day; every read after is a cheap database lookup.
 - **Structured LLM output** — the summarizer asks Groq for JSON and validates it into Pydantic
   models, so a bad response fails loudly instead of leaking into the API.
 
