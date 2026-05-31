@@ -19,18 +19,26 @@
     h3 { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; margin: 1.5rem 0 .5rem; }
     .tagline { margin: .25rem 0 1.5rem; }
     hr { border: 0; border-top: 1px solid #000; margin: 1.5rem 0; }
+    .search {
+      display: flex;
+      align-items: center;
+      border: 1px solid #000;
+      background: #fff;
+    }
+    .search:focus-within { outline: 1px solid #000; }
+    .search svg { flex: none; width: 1.1rem; height: 1.1rem; margin: 0 .5rem; }
     input[type="search"] {
-      width: 100%;
+      flex: 1;
       box-sizing: border-box;
       font-family: inherit;
       font-size: 1rem;
-      padding: .5rem;
-      border: 1px solid #000;
+      padding: .5rem .5rem .5rem 0;
+      border: 0;
       border-radius: 0;
       background: #fff;
       color: #000;
     }
-    input[type="search"]:focus { outline: 1px solid #000; }
+    input[type="search"]:focus { outline: 0; }
     .chips { margin: 1rem 0 0; }
     .chips button {
       font-family: inherit;
@@ -57,7 +65,13 @@
   <p class="tagline">The public consensus from Hacker News, summarized.</p>
   <hr />
 
-  <input type="search" id="filter" placeholder="Filter topics..." autocomplete="off" />
+  <div class="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <line x1="16.5" y1="16.5" x2="21" y2="21" />
+    </svg>
+    <input type="search" id="filter" placeholder="Get the real opinion on..." autocomplete="off" />
+  </div>
   <div class="chips" id="chips"></div>
 
   <p id="status" class="meta hidden"></p>
