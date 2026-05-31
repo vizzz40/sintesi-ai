@@ -14,7 +14,7 @@ services:
       - key: GROQ_MODEL
         value: llama-3.3-70b-versatile
       - key: REDDIT_USER_AGENT
-        value: "sintesi/0.1 (personal portfolio project)"
+        value: "python:sintesi:0.1 (by /u/YOUR_REDDIT_USERNAME)"
 
 databases:
   - name: sintesi-db
