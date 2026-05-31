@@ -4,22 +4,22 @@ from app.db import engine, init_db
 from app.models import Topic
 
 TOPICS = [
-    ("data-engineering", "Data Engineering", "dataengineering"),
+    ("data-engineering", "Data Engineering", "data engineering"),
     ("devops", "DevOps", "devops"),
-    ("polimi", "Politecnico di Milano", "Polimi"),
-    ("machine-learning", "Machine Learning", "MachineLearning"),
-    ("python", "Python", "Python"),
-    ("webdev", "Web Development", "webdev"),
+    ("machine-learning", "Machine Learning", "machine learning"),
+    ("python", "Python", "python"),
+    ("webdev", "Web Development", "web development"),
+    ("startups", "Startups", "startups"),
 ]
 
 
 def seed() -> None:
     init_db()
     with Session(engine) as session:
-        for slug, display_name, subreddit in TOPICS:
+        for slug, display_name, query in TOPICS:
             exists = session.exec(select(Topic).where(Topic.slug == slug)).first()
             if exists is None:
-                session.add(Topic(slug=slug, display_name=display_name, subreddit=subreddit))
+                session.add(Topic(slug=slug, display_name=display_name, query=query))
         session.commit()
 
 

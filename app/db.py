@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 
+from sqlalchemy import inspect
 from sqlmodel import Session, SQLModel, create_engine
 
 from app.config import get_settings
@@ -19,6 +20,12 @@ engine = create_engine(database_url, connect_args=connect_args)
 
 
 def init_db() -> None:
+    # Drop the Reddit-era schema if it's still around; the data is just cache.
+    insp = inspect(engine)
+    if insp.has_table("topics"):
+        columns = {c["name"] for c in insp.get_columns("topics")}
+        if "subreddit" in columns:
+            SQLModel.metadata.drop_all(engine)
     SQLModel.metadata.create_all(engine)
 
 

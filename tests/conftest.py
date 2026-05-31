@@ -23,7 +23,7 @@ def session(engine):
             Topic(
                 slug="data-engineering",
                 display_name="Data Engineering",
-                subreddit="dataengineering",
+                query="data engineering",
             )
         )
         session.commit()

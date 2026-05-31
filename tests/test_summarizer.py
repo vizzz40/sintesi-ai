@@ -52,10 +52,10 @@ def test_prompt_includes_posts_and_comments():
     summarizer = Summarizer(complete=fake_complete)
     comments = {"abc": [RedditComment(author="a", body="use dbt", score=90)]}
 
-    summarizer.summarize("dataengineering", [make_post()], comments)
+    summarizer.summarize("data engineering", [make_post()], comments)
 
     prompt = captured["prompt"]
-    assert "r/dataengineering" in prompt
+    assert "data engineering" in prompt
     assert "Best ETL tools" in prompt
     assert "use dbt" in prompt
 

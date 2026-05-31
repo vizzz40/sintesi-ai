@@ -1,31 +1,20 @@
 import httpx
-from pydantic import BaseModel
 
 from app.config import Settings, get_settings
+from app.services.sources.base import SourceComment, SourceError, SourcePost
+
+# Reddit posts/comments share the generic source shape.
+RedditPost = SourcePost
+RedditComment = SourceComment
 
 
-class RedditError(Exception):
+class RedditError(SourceError):
     pass
 
 
-class RedditPost(BaseModel):
-    id: str
-    title: str
-    author: str
-    score: int
-    num_comments: int
-    permalink: str
-    url: str
-    selftext: str = ""
-
-
-class RedditComment(BaseModel):
-    author: str
-    body: str
-    score: int
-
-
 class RedditClient:
+    name = "Reddit"
+
     def __init__(self, settings: Settings | None = None, client: httpx.Client | None = None):
         self.settings = settings or get_settings()
         self._client = client or httpx.Client(

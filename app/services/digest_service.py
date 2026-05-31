@@ -4,7 +4,7 @@ from sqlmodel import Session, select
 
 from app.config import Settings, get_settings
 from app.models import Digest, Post, Topic
-from app.services.reddit_client import RedditClient
+from app.services.sources import ContentSource, get_source
 from app.services.summarizer import Summarizer
 
 
@@ -16,27 +16,27 @@ class DigestService:
     def __init__(
         self,
         session: Session,
-        reddit: RedditClient | None = None,
+        source: ContentSource | None = None,
         summarizer: Summarizer | None = None,
         settings: Settings | None = None,
     ):
         self.session = session
         self.settings = settings or get_settings()
-        self.reddit = reddit or RedditClient(self.settings)
+        self.source = source or get_source(self.settings)
         self.summarizer = summarizer or Summarizer(self.settings)
 
     def get_for_topic(self, slug: str, refresh: bool = False) -> tuple[Topic, Digest, bool]:
         topic = self.session.exec(select(Topic).where(Topic.slug == slug)).first()
         if topic is None:
             raise TopicNotFound(slug)
-        digest, cached = self._get_or_create(topic.subreddit, refresh)
+        digest, cached = self._get_or_create(topic.query, refresh)
         return topic, digest, cached
 
-    def _get_or_create(self, subreddit: str, refresh: bool) -> tuple[Digest, bool]:
+    def _get_or_create(self, query: str, refresh: bool) -> tuple[Digest, bool]:
         today = date.today()
         existing = self.session.exec(
             select(Digest).where(
-                Digest.subreddit == subreddit, Digest.digest_date == today
+                Digest.query == query, Digest.digest_date == today
             )
         ).first()
         if existing is not None and not refresh:
@@ -44,17 +44,17 @@ class DigestService:
         if existing is not None:
             self.session.delete(existing)
             self.session.commit()
-        return self._generate(subreddit, today), False
+        return self._generate(query, today), False
 
-    def _generate(self, subreddit: str, day: date) -> Digest:
-        posts = self.reddit.top_posts(subreddit)
+    def _generate(self, query: str, day: date) -> Digest:
+        posts = self.source.top_posts(query)
         comments = {
-            p.id: self.reddit.top_comments(subreddit, p.id) for p in posts[:5]
+            p.id: self.source.top_comments(query, p.id) for p in posts[:5]
         }
-        consensus = self.summarizer.summarize(subreddit, posts, comments)
+        consensus = self.summarizer.summarize(query, posts, comments)
 
         digest = Digest(
-            subreddit=subreddit,
+            query=query,
             digest_date=day,
             overview=consensus.overview,
             hot_topics=[t.model_dump() for t in consensus.hot_topics],
@@ -62,7 +62,7 @@ class DigestService:
         )
         digest.posts = [
             Post(
-                reddit_id=p.id,
+                source_id=p.id,
                 title=p.title,
                 url=p.url,
                 permalink=p.permalink,

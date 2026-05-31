@@ -4,37 +4,42 @@ from fastapi.testclient import TestClient
 from app.db import get_session
 from app.main import app
 from app.services import digest_service
-from app.services.reddit_client import RedditComment, RedditError, RedditPost
+from app.services.sources.base import SourceComment, SourceError, SourcePost
 from app.services.summarizer import Consensus, HotTopic
 
 
-class FakeReddit:
+class FakeSource:
+    name = "Hacker News"
+
     def __init__(self, *args, **kwargs):
         pass
 
-    def top_posts(self, subreddit, limit=None):
+    def top_posts(self, query, limit=None):
         return [
-            RedditPost(
+            SourcePost(
                 id="abc",
                 title="Best ETL tools",
                 author="dataguy",
                 score=420,
                 num_comments=37,
-                permalink="/r/dataengineering/comments/abc/",
-                url="https://reddit.com/abc",
+                permalink="https://news.ycombinator.com/item?id=abc",
+                url="https://example.com/abc",
                 selftext="",
             )
         ]
 
-    def top_comments(self, subreddit, post_id, limit=None):
-        return [RedditComment(author="a", body="use dbt", score=90)]
+    def top_comments(self, query, post_id, limit=None):
+        return [SourceComment(author="a", body="use dbt", score=90)]
+
+    def close(self):
+        pass
 
 
 class FakeSummarizer:
     def __init__(self, *args, **kwargs):
         pass
 
-    def summarize(self, subreddit, posts, comments=None):
+    def summarize(self, query, posts, comments=None):
         return Consensus(
             overview="People recommend dbt.",
             hot_topics=[HotTopic(title="dbt", summary="Widely recommended.")],
@@ -43,7 +48,7 @@ class FakeSummarizer:
 
 @pytest.fixture
 def client(session, monkeypatch):
-    monkeypatch.setattr(digest_service, "RedditClient", FakeReddit)
+    monkeypatch.setattr(digest_service, "get_source", lambda *a, **k: FakeSource())
     monkeypatch.setattr(digest_service, "Summarizer", FakeSummarizer)
     app.dependency_overrides[get_session] = lambda: session
     with TestClient(app) as c:
@@ -66,6 +71,7 @@ def test_digest_happy_path(client):
     assert res.status_code == 200
     body = res.json()
     assert body["overview"] == "People recommend dbt."
+    assert body["source"] == "Hacker News"
     assert body["cached"] is False
     assert body["hot_topics"][0]["title"] == "dbt"
     assert body["top_posts"][0]["score"] == 420
@@ -84,11 +90,11 @@ def test_unknown_topic_returns_404(client):
     assert res.status_code == 404
 
 
-def test_reddit_failure_returns_502(client, monkeypatch):
-    def boom(self, subreddit, limit=None):
-        raise RedditError("rate limited")
+def test_source_failure_returns_502(client, monkeypatch):
+    def boom(self, query, limit=None):
+        raise SourceError("rate limited")
 
-    monkeypatch.setattr(FakeReddit, "top_posts", boom)
+    monkeypatch.setattr(FakeSource, "top_posts", boom)
 
     res = client.get("/api/digest/data-engineering")
 

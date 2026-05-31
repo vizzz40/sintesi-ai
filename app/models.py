@@ -10,16 +10,16 @@ class Topic(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     slug: str = Field(unique=True, index=True)
     display_name: str
-    subreddit: str
+    query: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class Digest(SQLModel, table=True):
     __tablename__ = "digests"
-    __table_args__ = (UniqueConstraint("subreddit", "digest_date"),)
+    __table_args__ = (UniqueConstraint("query", "digest_date"),)
 
     id: int | None = Field(default=None, primary_key=True)
-    subreddit: str = Field(index=True)
+    query: str = Field(index=True)
     digest_date: date
     overview: str
     hot_topics: list[dict] = Field(default_factory=list, sa_column=Column(JSON))
@@ -37,7 +37,7 @@ class Post(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     digest_id: int = Field(foreign_key="digests.id")
-    reddit_id: str
+    source_id: str
     title: str
     url: str
     permalink: str

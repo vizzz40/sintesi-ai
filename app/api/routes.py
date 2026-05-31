@@ -7,7 +7,7 @@ from app.db import get_session
 from app.models import Digest, Topic
 from app.schemas import DigestOut, PostOut, TopicOut
 from app.services.digest_service import DigestService, TopicNotFound
-from app.services.reddit_client import RedditError
+from app.services.sources import SourceError
 from app.services.summarizer import SummarizerError
 
 router = APIRouter(prefix="/api")
@@ -19,7 +19,7 @@ SessionDep = Annotated[Session, Depends(get_session)]
 def list_topics(session: SessionDep):
     topics = session.exec(select(Topic).order_by(Topic.display_name)).all()
     return [
-        TopicOut(slug=t.slug, display_name=t.display_name, subreddit=t.subreddit)
+        TopicOut(slug=t.slug, display_name=t.display_name, query=t.query)
         for t in topics
     ]
 
@@ -31,18 +31,21 @@ def get_digest(slug: str, session: SessionDep, refresh: bool = False):
         topic, digest, cached = service.get_for_topic(slug, refresh)
     except TopicNotFound:
         raise HTTPException(status_code=404, detail=f"Unknown topic: {slug}") from None
-    except RedditError:
-        raise HTTPException(status_code=502, detail="Could not fetch posts from Reddit") from None
+    except SourceError:
+        raise HTTPException(
+            status_code=502, detail="Could not fetch posts from the source"
+        ) from None
     except SummarizerError:
         raise HTTPException(status_code=502, detail="Could not generate the summary") from None
-    return _to_out(topic, digest, cached)
+    return _to_out(topic, digest, cached, service.source.name)
 
 
-def _to_out(topic: Topic, digest: Digest, cached: bool) -> DigestOut:
+def _to_out(topic: Topic, digest: Digest, cached: bool, source: str) -> DigestOut:
     posts = sorted(digest.posts, key=lambda p: p.rank)
     return DigestOut(
         topic=topic.slug,
-        subreddit=digest.subreddit,
+        source=source,
+        query=digest.query,
         date=digest.digest_date,
         overview=digest.overview,
         hot_topics=digest.hot_topics,

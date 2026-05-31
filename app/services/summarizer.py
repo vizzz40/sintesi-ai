@@ -3,7 +3,7 @@ from collections.abc import Callable
 from pydantic import BaseModel, ValidationError
 
 from app.config import Settings, get_settings
-from app.services.reddit_client import RedditComment, RedditPost
+from app.services.sources.base import SourceComment, SourcePost
 
 
 class SummarizerError(Exception):
@@ -21,7 +21,7 @@ class Consensus(BaseModel):
 
 
 SYSTEM_PROMPT = (
-    "You read a day's top Reddit posts from a subreddit and report the public consensus. "
+    "You read the top recent posts and comments about a topic and report the public consensus. "
     "Summarize what people are actually discussing and agreeing or disagreeing on. "
     "Be concise and neutral. Do not invent details that aren't in the posts. "
     'Reply with JSON: {"overview": str, "hot_topics": [{"title": str, "summary": str}]}. '
@@ -43,11 +43,11 @@ class Summarizer:
 
     def summarize(
         self,
-        subreddit: str,
-        posts: list[RedditPost],
-        comments: dict[str, list[RedditComment]] | None = None,
+        query: str,
+        posts: list[SourcePost],
+        comments: dict[str, list[SourceComment]] | None = None,
     ) -> Consensus:
-        prompt = self._build_prompt(subreddit, posts, comments or {})
+        prompt = self._build_prompt(query, posts, comments or {})
         raw = self._complete(prompt)
         try:
             return Consensus.model_validate_json(raw)
@@ -56,11 +56,11 @@ class Summarizer:
 
     def _build_prompt(
         self,
-        subreddit: str,
-        posts: list[RedditPost],
-        comments: dict[str, list[RedditComment]],
+        query: str,
+        posts: list[SourcePost],
+        comments: dict[str, list[SourceComment]],
     ) -> str:
-        lines = [f"Subreddit: r/{subreddit}", "Today's top posts:", ""]
+        lines = [f"Topic: {query}", "Top recent posts:", ""]
         for i, post in enumerate(posts, start=1):
             lines.append(f"{i}. {post.title} (score {post.score}, {post.num_comments} comments)")
             if post.selftext:

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class TopicOut(BaseModel):
     slug: str
     display_name: str
-    subreddit: str
+    query: str
 
 
 class HotTopicOut(BaseModel):
@@ -24,7 +24,8 @@ class PostOut(BaseModel):
 
 class DigestOut(BaseModel):
     topic: str | None
-    subreddit: str
+    source: str
+    query: str
     date: date
     overview: str
     hot_topics: list[HotTopicOut]

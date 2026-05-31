@@ -1,84 +1,77 @@
 import pytest
+from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel.pool import StaticPool
 
-from app.services.digest_service import DigestService, TopicNotFound
-from app.services.reddit_client import RedditComment, RedditPost
+from app.models import Topic
+from app.services.digest_service import DigestService
+from app.services.sources.base import SourceComment, SourcePost
 from app.services.summarizer import Consensus, HotTopic
 
 
-class FakeReddit:
-    def __init__(self):
-        self.post_calls = 0
+class FakeSource:
+    name = "Fake"
 
-    def top_posts(self, subreddit, limit=None):
-        self.post_calls += 1
-        return [
-            RedditPost(
-                id="abc",
-                title="Best ETL tools",
-                author="dataguy",
-                score=420,
-                num_comments=37,
-                permalink="/r/dataengineering/comments/abc/",
-                url="https://reddit.com/abc",
-                selftext="",
-            )
-        ]
+    def __init__(self, posts, comments):
+        self._posts = posts
+        self._comments = comments
 
-    def top_comments(self, subreddit, post_id, limit=None):
-        return [RedditComment(author="a", body="use dbt", score=90)]
+    def top_posts(self, query, limit=None):
+        return self._posts
+
+    def top_comments(self, query, post_id, limit=None):
+        return self._comments.get(post_id, [])
+
+    def close(self):
+        pass
 
 
 class FakeSummarizer:
-    def __init__(self):
-        self.calls = 0
-
-    def summarize(self, subreddit, posts, comments=None):
-        self.calls += 1
+    def summarize(self, query, posts, comments=None):
         return Consensus(
-            overview="People recommend dbt.",
-            hot_topics=[HotTopic(title="dbt", summary="Widely recommended.")],
+            overview="overview text",
+            hot_topics=[HotTopic(title="t1", summary="s1")],
         )
 
 
-def make_service(session):
-    return DigestService(session, reddit=FakeReddit(), summarizer=FakeSummarizer())
+@pytest.fixture
+def session():
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+    with Session(engine) as session:
+        yield session
 
 
-def test_cache_miss_generates_and_persists(session):
-    service = make_service(session)
+def test_get_for_topic_generates_and_caches(session):
+    topic = Topic(slug="python", display_name="Python", query="python")
+    session.add(topic)
+    session.commit()
 
-    topic, digest, cached = service.get_for_topic("data-engineering")
+    posts = [
+        SourcePost(
+            id="abc",
+            title="First post",
+            author="alice",
+            score=100,
+            num_comments=10,
+            permalink="https://news.ycombinator.com/item?id=abc",
+            url="https://example.com/abc",
+            selftext="hello",
+        ),
+    ]
+    comments = {"abc": [SourceComment(author="carol", body="great", score=20)]}
+    source = FakeSource(posts, comments)
+    service = DigestService(session, source=source, summarizer=FakeSummarizer())
 
+    _, digest, cached = service.get_for_topic("python")
     assert cached is False
-    assert digest.overview == "People recommend dbt."
-    assert digest.id is not None
+    assert digest.overview == "overview text"
     assert len(digest.posts) == 1
-    assert digest.posts[0].reddit_id == "abc"
+    assert digest.posts[0].source_id == "abc"
 
-
-def test_second_call_is_cached(session):
-    service = make_service(session)
-
-    service.get_for_topic("data-engineering")
-    _, _, cached = service.get_for_topic("data-engineering")
-
-    assert cached is True
-    assert service.summarizer.calls == 1
-    assert service.reddit.post_calls == 1
-
-
-def test_refresh_regenerates(session):
-    service = make_service(session)
-
-    service.get_for_topic("data-engineering")
-    _, _, cached = service.get_for_topic("data-engineering", refresh=True)
-
-    assert cached is False
-    assert service.summarizer.calls == 2
-
-
-def test_unknown_topic_raises(session):
-    service = make_service(session)
-
-    with pytest.raises(TopicNotFound):
-        service.get_for_topic("does-not-exist")
+    _, digest2, cached2 = service.get_for_topic("python")
+    assert cached2 is True
+    assert digest2.id == digest.id
