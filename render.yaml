@@ -13,8 +13,8 @@ services:
         sync: false
       - key: GROQ_MODEL
         value: llama-3.3-70b-versatile
-      - key: REDDIT_USER_AGENT
-        value: "python:sintesi:0.1 (by /u/YOUR_REDDIT_USERNAME)"
+      - key: CONTENT_SOURCE
+        value: hackernews
 
 databases:
   - name: sintesi-db
