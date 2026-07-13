@@ -1,4 +1,4 @@
-# Sintesi
+# Sintesi (built with the help of Claude Code)
 
 Type a topic and get today's public consensus from Hacker News — a short summary of what people are
 actually discussing, the hot themes, and the top posts behind it.
