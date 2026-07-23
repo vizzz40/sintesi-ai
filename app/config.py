@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     posts_per_digest: int = 15
     comments_per_post: int = 8
 
+    # Public demos should normally disable arbitrary searches so visitors cannot
+    # consume the owner's LLM quota. Curated topic digests remain available.
+    allow_freeform_search: bool = True
+
 
 @lru_cache
 def get_settings() -> Settings:

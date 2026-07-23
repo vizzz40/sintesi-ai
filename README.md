@@ -44,6 +44,26 @@ Or run it against Postgres with Docker:
 docker compose up --build   # set GROQ_API_KEY in .env first
 ```
 
+## Deploy on Koyeb
+
+The included `Dockerfile` can be deployed directly from this GitHub repository:
+
+1. Create a Web Service from the repository and select the Dockerfile builder.
+2. Choose the free instance in Frankfurt.
+3. Set the health check path to `/healthz`.
+4. Add these environment variables:
+
+```text
+GROQ_API_KEY=<secret>
+CONTENT_SOURCE=hackernews
+DATABASE_URL=sqlite:////tmp/sintesi.db
+ALLOW_FREEFORM_SEARCH=false
+```
+
+The SQLite database is only a daily LLM-response cache, so ephemeral storage is acceptable for the
+demo. `ALLOW_FREEFORM_SEARCH=false` keeps the curated topic digests available while preventing
+anonymous visitors from consuming the Groq quota with arbitrary queries.
+
 ## Design decisions
 
 - **Hacker News over Reddit** — Reddit blocks datacenter IPs with 403s regardless of User-Agent, so

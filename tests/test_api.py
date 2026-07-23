@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app.config import Settings, get_settings
 from app.db import get_session
 from app.main import app
 from app.services import digest_service
@@ -122,6 +123,24 @@ def test_search_blank_query_returns_400(client):
     res = client.get("/api/search", params={"q": "   "})
 
     assert res.status_code == 400
+
+
+def test_public_config_reports_freeform_search(client):
+    res = client.get("/api/config")
+
+    assert res.status_code == 200
+    assert res.json() == {"allow_freeform_search": True}
+
+
+def test_search_can_be_disabled_for_public_demo(client):
+    app.dependency_overrides[get_settings] = lambda: Settings(
+        allow_freeform_search=False
+    )
+
+    res = client.get("/api/search", params={"q": "rust async"})
+
+    assert res.status_code == 403
+    assert "public demo" in res.json()["detail"]
 
 
 def test_search_no_results_returns_404(client, monkeypatch):

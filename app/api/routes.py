@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
+from app.config import Settings, get_settings
 from app.db import get_session
 from app.models import Digest, Topic
 from app.schemas import DigestOut, PostOut, TopicOut
@@ -13,6 +14,12 @@ from app.services.summarizer import SummarizerError
 router = APIRouter(prefix="/api")
 
 SessionDep = Annotated[Session, Depends(get_session)]
+SettingsDep = Annotated[Settings, Depends(get_settings)]
+
+
+@router.get("/config")
+def get_public_config(settings: SettingsDep):
+    return {"allow_freeform_search": settings.allow_freeform_search}
 
 
 @router.get("/topics", response_model=list[TopicOut])
@@ -45,7 +52,12 @@ def get_digest(slug: str, session: SessionDep, refresh: bool = False):
 
 
 @router.get("/search", response_model=DigestOut)
-def search(q: str, session: SessionDep, refresh: bool = False):
+def search(q: str, session: SessionDep, settings: SettingsDep, refresh: bool = False):
+    if not settings.allow_freeform_search:
+        raise HTTPException(
+            status_code=403,
+            detail="Free-form search is disabled on the public demo. Choose a curated topic.",
+        )
     query = q.strip()
     if not query:
         raise HTTPException(status_code=400, detail="Type a topic to search for")
