@@ -54,22 +54,31 @@ Or run it against Postgres with Docker:
 docker compose up --build   # set GROQ_API_KEY in .env first
 ```
 
-## Deploy on Render
+## Deploy on Koyeb
 
-The included Blueprint runs the app on a free Render web service:
+[![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?type=git&builder=docker&repository=github.com/vizzz40/sintesi-ai&branch=main&name=sintesi)
 
-1. Create a new Blueprint from this repository.
-2. Add `GROQ_API_KEY` when Render asks for it.
-3. Apply the Blueprint.
+Koyeb builds the existing `Dockerfile` and redeploys the app after each push to `main`.
 
-`render.yaml` sets the health check, current Groq model, Hacker News source, and an ephemeral SQLite
-cache. It also disables free-form searches so visitors cannot spend the API quota on arbitrary
-topics.
+1. Open the button and connect the GitHub repository.
+2. Choose the Free instance in Frankfurt and expose HTTP port `8000` on `/`.
+3. Add `GROQ_API_KEY` as a secret.
+4. Add the remaining environment variables and deploy:
+
+```text
+GROQ_MODEL=openai/gpt-oss-20b
+CONTENT_SOURCE=hackernews
+DATABASE_URL=sqlite:////tmp/sintesi.db
+ALLOW_FREEFORM_SEARCH=false
+```
+
+The SQLite database is only a daily response cache, so ephemeral storage is enough for the demo.
+The free instance sleeps after one idle hour and wakes on the next request.
 
 ## Design decisions
 
 - **Hacker News over Reddit** — Reddit blocks datacenter IPs with 403s regardless of User-Agent, so
-  it can't run on a host like Render. The HN Algolia API needs no auth and serves datacenter IPs, so
+  it can't run on a cloud host. The HN Algolia API needs no auth and serves datacenter IPs, so
   the live demo actually works. Reddit stays as a selectable source for local use.
 - **Cache by `(query, day)`** — the expensive source fetch plus LLM call runs once per topic per
   day; every read after is a cheap database lookup.
