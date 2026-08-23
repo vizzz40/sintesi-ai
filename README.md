@@ -12,6 +12,10 @@ LLM write the consensus, and caches the result so the same topic costs nothing f
 day. A Reddit source ships too, but Reddit 403s datacenter IPs, so it only works from a residential
 network — pick the source with `CONTENT_SOURCE` (`hackernews` or `reddit`).
 
+## Demo
+
+[![Sintesi live demo](docs/demo.gif)](https://sintesi-ai.onrender.com)
+
 ## Architecture
 
 ```mermaid
