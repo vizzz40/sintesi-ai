@@ -6,6 +6,7 @@ from app.models import Topic
 TOPICS = [
     ("data-engineering", "Data Engineering", "data engineering"),
     ("devops", "DevOps", "devops"),
+    ("kubernetes", "Kubernetes", "kubernetes"),
     ("machine-learning", "Machine Learning", "machine learning"),
     ("python", "Python", "python"),
     ("webdev", "Web Development", "web development"),
