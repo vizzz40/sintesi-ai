@@ -54,26 +54,15 @@ Or run it against Postgres with Docker:
 docker compose up --build   # set GROQ_API_KEY in .env first
 ```
 
-## Deploy on Koyeb
+## Deploy on Render
 
-[![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?type=git&builder=docker&repository=github.com/vizzz40/sintesi-ai&branch=main&name=sintesi)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/vizzz40/sintesi-ai)
 
-Koyeb builds the existing `Dockerfile` and redeploys the app after each push to `main`.
+The included `render.yaml` creates a free Docker web service, checks `/healthz`, and redeploys the app
+after each push to `main`. Open the button, connect the repository, add `GROQ_API_KEY`, and deploy.
 
-1. Open the button and connect the GitHub repository.
-2. Choose the Free instance in Frankfurt and expose HTTP port `8000` on `/`.
-3. Add `GROQ_API_KEY` as a secret.
-4. Add the remaining environment variables and deploy:
-
-```text
-GROQ_MODEL=openai/gpt-oss-20b
-CONTENT_SOURCE=hackernews
-DATABASE_URL=sqlite:////tmp/sintesi.db
-ALLOW_FREEFORM_SEARCH=false
-```
-
-The SQLite database is only a daily response cache, so ephemeral storage is enough for the demo.
-The free instance sleeps after one idle hour and wakes on the next request.
+The SQLite database is only a daily response cache, so ephemeral storage is enough for this demo.
+Free Render services sleep when idle and can take about a minute to wake up.
 
 ## Design decisions
 

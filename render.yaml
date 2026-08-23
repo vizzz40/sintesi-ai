@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: sintesi
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /healthz
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      - key: CONTENT_SOURCE
+        value: hackernews
+      - key: DATABASE_URL
+        value: sqlite:////tmp/sintesi.db
+      - key: ALLOW_FREEFORM_SEARCH
+        value: false
