@@ -1,4 +1,6 @@
-# Sintesi 
+# Sintesi
+
+[![ci](https://github.com/vizzz40/sintesi-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/vizzz40/sintesi-ai/actions/workflows/ci.yml)
 
 Type a topic and get today's public consensus from Hacker News — a short summary of what people are
 actually discussing, the hot themes, and the top posts behind it.
@@ -29,14 +31,22 @@ Python 3.13 · FastAPI · SQLModel (SQLite / Postgres) · httpx · Groq · pytes
 
 ## Run it
 
+You need Python 3.13, [uv](https://docs.astral.sh/uv/), and a Groq API key.
+
 ```bash
 uv sync
-cp .env.example .env        # add your GROQ_API_KEY
-uv run python -m app.seed   # create tables, load the topics
+cp .env.example .env
+uv run python -m app.seed
 uv run uvicorn app.main:app --reload
 ```
 
-Page at `/`, Swagger at `/docs`. Tests: `uv run pytest`.
+Add your `GROQ_API_KEY` to `.env`. The page is at `/` and Swagger is at `/docs`.
+
+```bash
+uv run pytest
+uv run ruff check .
+uv run ruff format --check .
+```
 
 Or run it against Postgres with Docker:
 
@@ -44,25 +54,17 @@ Or run it against Postgres with Docker:
 docker compose up --build   # set GROQ_API_KEY in .env first
 ```
 
-## Deploy on Koyeb
+## Deploy on Render
 
-The included `Dockerfile` can be deployed directly from this GitHub repository:
+The included Blueprint runs the app on a free Render web service:
 
-1. Create a Web Service from the repository and select the Dockerfile builder.
-2. Choose the free instance in Frankfurt.
-3. Set the health check path to `/healthz`.
-4. Add these environment variables:
+1. Create a new Blueprint from this repository.
+2. Add `GROQ_API_KEY` when Render asks for it.
+3. Apply the Blueprint.
 
-```text
-GROQ_API_KEY=<secret>
-CONTENT_SOURCE=hackernews
-DATABASE_URL=sqlite:////tmp/sintesi.db
-ALLOW_FREEFORM_SEARCH=false
-```
-
-The SQLite database is only a daily LLM-response cache, so ephemeral storage is acceptable for the
-demo. `ALLOW_FREEFORM_SEARCH=false` keeps the curated topic digests available while preventing
-anonymous visitors from consuming the Groq quota with arbitrary queries.
+`render.yaml` sets the health check, current Groq model, Hacker News source, and an ephemeral SQLite
+cache. It also disables free-form searches so visitors cannot spend the API quota on arbitrary
+topics.
 
 ## Design decisions
 
@@ -71,8 +73,8 @@ anonymous visitors from consuming the Groq quota with arbitrary queries.
   the live demo actually works. Reddit stays as a selectable source for local use.
 - **Cache by `(query, day)`** — the expensive source fetch plus LLM call runs once per topic per
   day; every read after is a cheap database lookup.
-- **Structured LLM output** — the summarizer asks Groq for JSON and validates it into Pydantic
-  models, so a bad response fails loudly instead of leaking into the API.
+- **Structured LLM output** — Groq follows a strict JSON schema and Pydantic validates the result
+  before it reaches the API.
 
 ## License
 

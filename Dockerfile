@@ -1,6 +1,6 @@
 FROM python:3.13-slim
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.9 /uv /uvx /bin/
 
 WORKDIR /app
 
@@ -8,7 +8,6 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 COPY app ./app
-COPY main.py ./
 
 ENV PATH="/app/.venv/bin:$PATH"
 

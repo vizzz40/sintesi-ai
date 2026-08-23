@@ -1,11 +1,10 @@
 [project]
-name = "sintesi-2"
+name = "sintesi-ai"
 version = "0.1.0"
-description = "Add your description here"
+description = "Daily Hacker News consensus digests powered by FastAPI and Groq"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "alembic>=1.18.4",
     "fastapi>=0.136.3",
     "groq>=1.4.0",
     "httpx>=0.28.1",
