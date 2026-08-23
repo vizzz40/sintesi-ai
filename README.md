@@ -2,6 +2,8 @@
 
 [![ci](https://github.com/vizzz40/sintesi-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/vizzz40/sintesi-ai/actions/workflows/ci.yml)
 
+[Live demo](https://sintesi-ai.onrender.com)
+
 Type a topic and get today's public consensus from Hacker News — a short summary of what people are
 actually discussing, the hot themes, and the top posts behind it.
 
