@@ -22,9 +22,7 @@ class HackerNewsSource:
 
     def __init__(self, settings: Settings | None = None, client: httpx.Client | None = None):
         self.settings = settings or get_settings()
-        self._client = client or httpx.Client(
-            base_url=self.settings.hn_base_url, timeout=10.0
-        )
+        self._client = client or httpx.Client(base_url=self.settings.hn_base_url, timeout=10.0)
 
     def top_posts(self, query: str, limit: int | None = None) -> list[SourcePost]:
         limit = limit or self.settings.posts_per_digest
@@ -85,9 +83,7 @@ class HackerNewsSource:
             res.raise_for_status()
             return res.json()
         except httpx.HTTPStatusError as e:
-            raise SourceError(
-                f"Hacker News returned {e.response.status_code} for {path}"
-            ) from e
+            raise SourceError(f"Hacker News returned {e.response.status_code} for {path}") from e
         except httpx.HTTPError as e:
             raise SourceError(f"Could not reach Hacker News for {path}") from e
 

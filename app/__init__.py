@@ -1,3 +1,3 @@
-"""Sintesi — daily public-consensus digests for any subreddit."""
+"""Daily public-consensus digests from Hacker News."""
 
 __version__ = "0.1.0"

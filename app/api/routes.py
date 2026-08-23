@@ -25,10 +25,7 @@ def get_public_config(settings: SettingsDep):
 @router.get("/topics", response_model=list[TopicOut])
 def list_topics(session: SessionDep):
     topics = session.exec(select(Topic).order_by(Topic.display_name)).all()
-    return [
-        TopicOut(slug=t.slug, display_name=t.display_name, query=t.query)
-        for t in topics
-    ]
+    return [TopicOut(slug=t.slug, display_name=t.display_name, query=t.query) for t in topics]
 
 
 @router.get("/digest/{slug}", response_model=DigestOut)
@@ -39,15 +36,15 @@ def get_digest(slug: str, session: SessionDep, refresh: bool = False):
     except TopicNotFound:
         raise HTTPException(status_code=404, detail=f"Unknown topic: {slug}") from None
     except NoResults:
-        raise HTTPException(
-            status_code=404, detail="No recent discussion to summarize"
-        ) from None
+        raise HTTPException(status_code=404, detail="No recent discussion to summarize") from None
     except SourceError:
         raise HTTPException(
             status_code=502, detail="Could not fetch posts from the source"
         ) from None
     except SummarizerError:
         raise HTTPException(status_code=502, detail="Could not generate the summary") from None
+    finally:
+        service.close()
     return _to_out(topic, digest, cached, service.source.name)
 
 
@@ -76,6 +73,8 @@ def search(q: str, session: SessionDep, settings: SettingsDep, refresh: bool = F
         ) from None
     except SummarizerError:
         raise HTTPException(status_code=502, detail="Could not generate the summary") from None
+    finally:
+        service.close()
     return _to_out(topic, digest, cached, service.source.name)
 
 

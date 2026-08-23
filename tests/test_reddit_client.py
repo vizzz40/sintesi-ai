@@ -79,9 +79,7 @@ def test_top_comments_respects_limit():
         {"kind": "t1", "data": {"author": str(i), "body": "x", "score": i}} for i in range(10)
     ]
     payload = [{"data": {"children": []}}, {"data": {"children": children}}]
-    respx.get(f"{BASE}/r/sub/comments/p.json").mock(
-        return_value=httpx.Response(200, json=payload)
-    )
+    respx.get(f"{BASE}/r/sub/comments/p.json").mock(return_value=httpx.Response(200, json=payload))
 
     comments = make_client().top_comments("sub", "p", limit=3)
 

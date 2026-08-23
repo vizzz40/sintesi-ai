@@ -77,9 +77,7 @@ class RedditClient:
             res.raise_for_status()
             return res.json()
         except httpx.HTTPStatusError as e:
-            raise RedditError(
-                f"Reddit returned {e.response.status_code} for {path}"
-            ) from e
+            raise RedditError(f"Reddit returned {e.response.status_code} for {path}") from e
         except httpx.HTTPError as e:
             raise RedditError(f"Could not reach Reddit for {path}") from e
 

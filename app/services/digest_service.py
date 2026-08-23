@@ -29,6 +29,9 @@ class DigestService:
         self.source = source or get_source(self.settings)
         self.summarizer = summarizer or Summarizer(self.settings)
 
+    def close(self) -> None:
+        self.source.close()
+
     def get_for_topic(self, slug: str, refresh: bool = False) -> tuple[Topic, Digest, bool]:
         topic = self.session.exec(select(Topic).where(Topic.slug == slug)).first()
         if topic is None:
@@ -44,9 +47,7 @@ class DigestService:
     def _get_or_create(self, query: str, refresh: bool) -> tuple[Digest, bool]:
         today = date.today()
         existing = self.session.exec(
-            select(Digest).where(
-                Digest.query == query, Digest.digest_date == today
-            )
+            select(Digest).where(Digest.query == query, Digest.digest_date == today)
         ).first()
         if existing is not None and not refresh:
             return existing, True
@@ -59,9 +60,7 @@ class DigestService:
         posts = self.source.top_posts(query)
         if not posts:
             raise NoResults(query)
-        comments = {
-            p.id: self.source.top_comments(query, p.id) for p in posts[:5]
-        }
+        comments = {p.id: self.source.top_comments(query, p.id) for p in posts[:5]}
         consensus = self.summarizer.summarize(query, posts, comments)
 
         digest = Digest(

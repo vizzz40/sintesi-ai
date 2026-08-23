@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from app.config import Settings
 from app.services.reddit_client import RedditComment, RedditPost
 from app.services.summarizer import Consensus, Summarizer, SummarizerError
 
@@ -40,6 +41,23 @@ def test_invalid_llm_output_raises():
 
     with pytest.raises(SummarizerError):
         summarizer.summarize("sub", [make_post()])
+
+
+def test_extra_llm_fields_raise():
+    summarizer = Summarizer(
+        complete=lambda _: '{"overview": "ok", "hot_topics": [], "extra": true}'
+    )
+
+    with pytest.raises(SummarizerError):
+        summarizer.summarize("sub", [make_post()])
+
+
+def test_missing_api_key_raises():
+    settings = Settings(_env_file=None, groq_api_key="")
+    summarizer = Summarizer(settings=settings)
+
+    with pytest.raises(SummarizerError, match="GROQ_API_KEY"):
+        summarizer._groq_complete("prompt")
 
 
 def test_prompt_includes_posts_and_comments():

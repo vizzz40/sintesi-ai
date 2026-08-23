@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from app.config import Settings, get_settings
 from app.services.sources.base import SourceComment, SourcePost
@@ -11,11 +11,15 @@ class SummarizerError(Exception):
 
 
 class HotTopic(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     title: str
     summary: str
 
 
 class Consensus(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     overview: str
     hot_topics: list[HotTopic]
 
@@ -71,16 +75,29 @@ class Summarizer:
         return "\n".join(lines)
 
     def _groq_complete(self, prompt: str) -> str:
-        from groq import Groq
+        from groq import Groq, GroqError
 
-        client = Groq(api_key=self.settings.groq_api_key)
-        res = client.chat.completions.create(
-            model=self.settings.groq_model,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt},
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.3,
-        )
+        if not self.settings.groq_api_key:
+            raise SummarizerError("GROQ_API_KEY is not configured")
+
+        try:
+            client = Groq(api_key=self.settings.groq_api_key)
+            res = client.chat.completions.create(
+                model=self.settings.groq_model,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt},
+                ],
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "consensus",
+                        "strict": True,
+                        "schema": Consensus.model_json_schema(),
+                    },
+                },
+                temperature=0.3,
+            )
+        except GroqError as e:
+            raise SummarizerError("Groq request failed") from e
         return res.choices[0].message.content or ""

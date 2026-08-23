@@ -133,9 +133,7 @@ def test_public_config_reports_freeform_search(client):
 
 
 def test_search_can_be_disabled_for_public_demo(client):
-    app.dependency_overrides[get_settings] = lambda: Settings(
-        allow_freeform_search=False
-    )
+    app.dependency_overrides[get_settings] = lambda: Settings(allow_freeform_search=False)
 
     res = client.get("/api/search", params={"q": "rust async"})
 
