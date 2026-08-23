@@ -3,19 +3,16 @@ services:
     name: sintesi
     runtime: docker
     plan: free
+    region: frankfurt
     healthCheckPath: /healthz
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: sintesi-db
-          property: connectionString
+        value: sqlite:////tmp/sintesi.db
       - key: GROQ_API_KEY
         sync: false
       - key: GROQ_MODEL
-        value: llama-3.3-70b-versatile
+        value: openai/gpt-oss-20b
       - key: CONTENT_SOURCE
         value: hackernews
-
-databases:
-  - name: sintesi-db
-    plan: free
+      - key: ALLOW_FREEFORM_SEARCH
+        value: false
