@@ -80,8 +80,8 @@ class Summarizer:
         if not self.settings.groq_api_key:
             raise SummarizerError("GROQ_API_KEY is not configured")
 
+        client = Groq(api_key=self.settings.groq_api_key)
         try:
-            client = Groq(api_key=self.settings.groq_api_key)
             res = client.chat.completions.create(
                 model=self.settings.groq_model,
                 messages=[
@@ -100,4 +100,6 @@ class Summarizer:
             )
         except GroqError as e:
             raise SummarizerError("Groq request failed") from e
+        finally:
+            client.close()
         return res.choices[0].message.content or ""

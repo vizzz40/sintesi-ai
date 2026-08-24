@@ -29,10 +29,10 @@ def list_topics(session: SessionDep):
 
 
 @router.get("/digest/{slug}", response_model=DigestOut)
-def get_digest(slug: str, session: SessionDep, refresh: bool = False):
+def get_digest(slug: str, session: SessionDep):
     service = DigestService(session)
     try:
-        topic, digest, cached = service.get_for_topic(slug, refresh)
+        topic, digest, cached = service.get_for_topic(slug)
     except TopicNotFound:
         raise HTTPException(status_code=404, detail=f"Unknown topic: {slug}") from None
     except NoResults:
@@ -49,7 +49,7 @@ def get_digest(slug: str, session: SessionDep, refresh: bool = False):
 
 
 @router.get("/search", response_model=DigestOut)
-def search(q: str, session: SessionDep, settings: SettingsDep, refresh: bool = False):
+def search(q: str, session: SessionDep, settings: SettingsDep):
     if not settings.allow_freeform_search:
         raise HTTPException(
             status_code=403,
@@ -62,7 +62,7 @@ def search(q: str, session: SessionDep, settings: SettingsDep, refresh: bool = F
         query = query[:100]
     service = DigestService(session)
     try:
-        topic, digest, cached = service.get_for_query(query, refresh)
+        topic, digest, cached = service.get_for_query(query)
     except NoResults:
         raise HTTPException(
             status_code=404, detail=f'No recent Hacker News discussion about "{query}"'

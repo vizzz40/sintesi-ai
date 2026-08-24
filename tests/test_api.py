@@ -85,6 +85,13 @@ def test_digest_is_cached_on_second_call(client):
     assert res.json()["cached"] is True
 
 
+def test_refresh_query_cannot_bypass_cache(client):
+    client.get("/api/digest/data-engineering")
+    res = client.get("/api/digest/data-engineering", params={"refresh": "true"})
+
+    assert res.json()["cached"] is True
+
+
 def test_unknown_topic_returns_404(client):
     res = client.get("/api/digest/nope")
 

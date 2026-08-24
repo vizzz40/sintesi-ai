@@ -32,28 +32,25 @@ class DigestService:
     def close(self) -> None:
         self.source.close()
 
-    def get_for_topic(self, slug: str, refresh: bool = False) -> tuple[Topic, Digest, bool]:
+    def get_for_topic(self, slug: str) -> tuple[Topic, Digest, bool]:
         topic = self.session.exec(select(Topic).where(Topic.slug == slug)).first()
         if topic is None:
             raise TopicNotFound(slug)
-        digest, cached = self._get_or_create(topic.query, refresh)
+        digest, cached = self._get_or_create(topic.query)
         return topic, digest, cached
 
-    def get_for_query(self, query: str, refresh: bool = False) -> tuple[Topic, Digest, bool]:
-        digest, cached = self._get_or_create(query, refresh)
+    def get_for_query(self, query: str) -> tuple[Topic, Digest, bool]:
+        digest, cached = self._get_or_create(query)
         topic = Topic(slug=query, display_name=query, query=query)
         return topic, digest, cached
 
-    def _get_or_create(self, query: str, refresh: bool) -> tuple[Digest, bool]:
+    def _get_or_create(self, query: str) -> tuple[Digest, bool]:
         today = date.today()
         existing = self.session.exec(
             select(Digest).where(Digest.query == query, Digest.digest_date == today)
         ).first()
-        if existing is not None and not refresh:
-            return existing, True
         if existing is not None:
-            self.session.delete(existing)
-            self.session.commit()
+            return existing, True
         return self._generate(query, today), False
 
     def _generate(self, query: str, day: date) -> Digest:
