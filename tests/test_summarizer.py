@@ -3,19 +3,19 @@ import json
 import pytest
 
 from app.config import Settings
-from app.services.reddit_client import RedditComment, RedditPost
+from app.services.sources.base import SourceComment, SourcePost
 from app.services.summarizer import Consensus, Summarizer, SummarizerError
 
 
 def make_post(pid="abc", title="Best ETL tools", selftext="what are you using?"):
-    return RedditPost(
+    return SourcePost(
         id=pid,
         title=title,
         author="dataguy",
         score=420,
         num_comments=37,
-        permalink="/r/dataengineering/comments/abc/",
-        url="https://reddit.com/abc",
+        permalink="https://news.ycombinator.com/item?id=abc",
+        url="https://example.com/abc",
         selftext=selftext,
     )
 
@@ -68,7 +68,7 @@ def test_prompt_includes_posts_and_comments():
         return json.dumps({"overview": "ok", "hot_topics": []})
 
     summarizer = Summarizer(complete=fake_complete)
-    comments = {"abc": [RedditComment(author="a", body="use dbt", score=90)]}
+    comments = {"abc": [SourceComment(author="a", body="use dbt", score=90)]}
 
     summarizer.summarize("data engineering", [make_post()], comments)
 

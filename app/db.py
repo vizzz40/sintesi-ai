@@ -20,7 +20,7 @@ engine = create_engine(database_url, connect_args=connect_args)
 
 
 def init_db() -> None:
-    # Drop the Reddit-era schema if it's still around; the data is just cache.
+    # Drop the old schema if it is still around; the data is only a cache.
     insp = inspect(engine)
     if insp.has_table("topics"):
         columns = {c["name"] for c in insp.get_columns("topics")}

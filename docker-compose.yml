@@ -20,9 +20,7 @@ services:
       DATABASE_URL: postgresql+psycopg://sintesi:sintesi@db:5432/sintesi
       GROQ_API_KEY: ${GROQ_API_KEY}
       GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-20b}
-      CONTENT_SOURCE: ${CONTENT_SOURCE:-hackernews}
       ALLOW_FREEFORM_SEARCH: ${ALLOW_FREEFORM_SEARCH:-true}
-      REDDIT_USER_AGENT: ${REDDIT_USER_AGENT:-sintesi/0.1 (personal portfolio project)}
     depends_on:
       db:
         condition: service_healthy

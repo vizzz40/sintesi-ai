@@ -4,13 +4,12 @@
 
 [Live demo](https://sintesi-ai.onrender.com)
 
-Type a topic and get today's public consensus from Hacker News — a short summary of what people are
-actually discussing, the hot themes, and the top posts behind it.
+Choose a curated topic and get a daily Hacker News consensus digest — a short summary of what people
+are discussing, the hot themes, and the top posts behind it.
 
-It fetches the top recent stories and comments for a topic from the Hacker News Algolia API, has an
-LLM write the consensus, and caches the result so the same topic costs nothing for the rest of the
-day. A Reddit source ships too, but Reddit 403s datacenter IPs, so it only works from a residential
-network — pick the source with `CONTENT_SOURCE` (`hackernews` or `reddit`).
+It fetches recent stories and comments from the Hacker News Algolia API, asks an LLM to summarize
+them, and caches one digest per query and server date. The public demo limits visitors to curated
+topics so they cannot use arbitrary searches to consume the owner's Groq quota.
 
 ## Demo
 
@@ -27,9 +26,9 @@ flowchart LR
     DS -->|cache miss| SUM[Summarizer] --> Groq[(Groq)]
 ```
 
-`routes → DigestService → (ContentSource, Summarizer, DB)`. The service orchestrates; the source is
-chosen by config behind a small Protocol, so swapping Hacker News for Reddit is one env var and the
-suite runs offline with everything mocked.
+`routes → DigestService → (ContentSource, Summarizer, DB)`. The service orchestrates, and Hacker News
+sits behind a small Protocol so another source can be added without changing `DigestService`. The
+test suite runs offline with network and LLM calls mocked.
 
 ## Stack
 
@@ -72,11 +71,10 @@ Free Render services sleep when idle and can take about a minute to wake up.
 
 ## Design decisions
 
-- **Hacker News over Reddit** — Reddit blocks datacenter IPs with 403s regardless of User-Agent, so
-  it can't run on a cloud host. The HN Algolia API needs no auth and serves datacenter IPs, so
-  the live demo actually works. Reddit stays as a selectable source for local use.
-- **Cache by `(query, day)`** — the expensive source fetch plus LLM call runs once per topic per
-  day; every read after is a cheap database lookup.
+- **Hacker News as the source** — the Algolia API needs no authentication and works from cloud hosts,
+  which keeps the demo simple to run and deploy.
+- **Cache by `(query, date)`** — the expensive source fetch plus LLM call runs once per topic per
+  server date; every read after is a cheap database lookup.
 - **Structured LLM output** — Groq follows a strict JSON schema and Pydantic validates the result
   before it reaches the API.
 

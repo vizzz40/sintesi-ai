@@ -10,8 +10,6 @@ services:
         sync: false
       - key: GROQ_MODEL
         value: openai/gpt-oss-20b
-      - key: CONTENT_SOURCE
-        value: hackernews
       - key: DATABASE_URL
         value: sqlite:////tmp/sintesi.db
       - key: ALLOW_FREEFORM_SEARCH

@@ -18,11 +18,4 @@ __all__ = [
 
 def get_source(settings: Settings | None = None) -> ContentSource:
     settings = settings or get_settings()
-    name = settings.content_source.lower()
-    if name == "hackernews":
-        return HackerNewsSource(settings)
-    if name == "reddit":
-        from app.services.reddit_client import RedditClient
-
-        return RedditClient(settings)
-    raise SourceError(f"Unknown content source: {settings.content_source}")
+    return HackerNewsSource(settings)
